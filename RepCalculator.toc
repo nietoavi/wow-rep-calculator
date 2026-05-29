@@ -1,0 +1,24 @@
+## Interface: 20504
+## Title: RepCalculator
+## Notes: Aldor/Scryers reputation calculator (in-game clone of aldor-scryers-calculator.com). Multi-reputation architecture: pluggable Reputations/<X>.lua modules.
+## Author: Jose G Nieto A
+## Version: 0.1.0
+## SavedVariables: RepCalcDB
+
+Core\Registry.lua
+Core\Timer.lua
+Core\Faction.lua
+Core\Bonuses.lua
+Reputations\AldorData.lua
+Reputations\Aldor.lua
+Reputations\ScryersData.lua
+Reputations\Scryers.lua
+Reputations\CenarionData.lua
+Reputations\Cenarion.lua
+Core\DB.lua
+Core\Calculator.lua
+Core\Engine.lua
+Core\AHPrices.lua
+Core\MainPanel.lua
+Core\Minimap.lua
+Core\Slash.lua
