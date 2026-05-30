@@ -50,6 +50,7 @@ function A.DB.Init()
     if RepCalcDB.minimapAngle == nil then RepCalcDB.minimapAngle = 165   end
     if RepCalcDB.minimapHide  == nil then RepCalcDB.minimapHide  = false end
     if RepCalcDB.locked       == nil then RepCalcDB.locked       = false end
+    if RepCalcDB.useInventory == nil then RepCalcDB.useInventory = true  end
 
     -- Defaults for every registered reputation.
     for _, repId in ipairs(RepCalc.GetRegisteredReputations()) do

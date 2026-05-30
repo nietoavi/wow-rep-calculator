@@ -20,6 +20,7 @@ Core\Calculator.lua
 Core\Engine.lua
 Core\AHPrices.lua
 Core\TSMPrices.lua
+Core\Inventory.lua
 Core\MainPanel.lua
 Core\Minimap.lua
 Core\Slash.lua

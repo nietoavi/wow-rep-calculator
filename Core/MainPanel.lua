@@ -11,7 +11,7 @@
 local _, A = ...
 A.UI = {}
 
-local PANEL_W, PANEL_H = 560, 460
+local PANEL_W, PANEL_H = 560, 488
 local LCOL_X, RCOL_X   = 16, 300
 local COL_W            = 248
 
@@ -303,6 +303,18 @@ local function BuildPanel()
     widgets.warning:SetWidth(COL_W)
     widgets.warning:SetJustifyH("LEFT")
 
+    -- Inventory toggle (bottom-left): subtract items the player already owns.
+    widgets.invCheck = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
+    widgets.invCheck:SetSize(20, 20)
+    widgets.invCheck:SetPoint("BOTTOMLEFT", LCOL_X - 2, 12)
+    local invText = Label(panel, "Subtract items I already have", 11)
+    invText:SetPoint("LEFT", widgets.invCheck, "RIGHT", 2, 0)
+    widgets.invCheck:SetScript("OnClick", function(self)
+        local db = A.DB.Shared()
+        if db then db.useInventory = self:GetChecked() and true or false end
+        A.Engine.Refresh("inventory_toggle")
+    end)
+
     panel:Hide()
 end
 
@@ -446,6 +458,10 @@ local function Refresh()
         end
     end
 
+    -- inventory toggle state
+    local useInv = (A.DB.Shared() or {}).useInventory ~= false
+    widgets.invCheck:SetChecked(useInv)
+
     -- ----- compute + paint results -----
     local scenario = A.Engine.BuildScenario()
     local plan = scenario and A.Calculator.Compute(scenario) or nil
@@ -462,6 +478,18 @@ local function Refresh()
 
     widgets.repNeeded:SetText(string.format("Reputation needed: %d", plan.repNeeded))
 
+    -- Owned-count helpers. Cache per refresh; track a running remainder so an
+    -- item appearing in more than one group isn't double-counted.
+    local invTotal, invLeft = {}, {}
+    local function ownedOf(itemID)
+        if invTotal[itemID] == nil then
+            invTotal[itemID] = (useInv and A.Inventory and A.Inventory.GetCount(itemID)) or 0
+            invLeft[itemID]  = invTotal[itemID]
+        end
+        return invTotal[itemID]
+    end
+
+    local buyItems, buySilver = 0, 0
     local y = widgets.groupTop
     for i, g in ipairs(plan.groups) do
         local gr = groupRows[i]
@@ -482,18 +510,37 @@ local function Refresh()
         gr:ClearAllPoints()
         gr:SetPoint("TOPLEFT", RCOL_X, y)
         gr.icon:SetTexture(GetItemIcon(g.item.itemID) or "Interface\\Icons\\INV_Misc_QuestionMark")
+
+        local itemID = g.item.itemID
+        local unit   = (scenario.prices and scenario.prices[itemID]) or 0
+        local owned  = ownedOf(itemID)
+        local use    = math.min(invLeft[itemID] or 0, g.count)
+        invLeft[itemID] = (invLeft[itemID] or 0) - use
+        local toBuy   = g.count - use
+        local buyCost = toBuy * unit
+        buyItems  = buyItems  + toBuy
+        buySilver = buySilver + buyCost
+
         local miss = g.missingPrice and "  |cffd8a060(no price)|r" or ""
-        gr.line1:SetText(string.format("%d x %s%s", g.count, g.item.name, miss))
-        local unit = (scenario.prices and scenario.prices[g.item.itemID]) or 0
+        if owned > 0 then
+            if toBuy > 0 then
+                gr.line1:SetText(string.format("buy %d x %s  |cff6a8a6a(have %d)|r%s",
+                    toBuy, g.item.name, owned, miss))
+            else
+                gr.line1:SetText(string.format("%s  |cff7fb87f(have all %d)|r", g.item.name, g.count))
+            end
+        else
+            gr.line1:SetText(string.format("%d x %s%s", g.count, g.item.name, miss))
+        end
         gr.line2:SetText(string.format("@ %s ea  =  %s",
             A.Calculator.FormatSilver(unit),
-            A.Calculator.FormatSilver(g.silver)))
+            A.Calculator.FormatSilver(buyCost)))
         gr:Show()
         y = y - 32
     end
 
-    widgets.totals:SetText(string.format("Total: %d items   %s",
-        plan.totalItems, A.Calculator.FormatSilver(plan.totalSilver)))
+    widgets.totals:SetText(string.format("Total: %d to buy   %s",
+        buyItems, A.Calculator.FormatSilver(buySilver)))
     widgets.bonusLine:SetText(string.format("Bonus multiplier: x%.3f", plan.bonusMult))
     if plan.pricesMissing then
         widgets.warning:SetText("Some bands had no priced item; counts use the highest-rep fallback.")

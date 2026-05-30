@@ -19,6 +19,7 @@ local function Help()
     print("  /repcalc show|hide       open or close the panel")
     print("  /repcalc minimap         show/hide the minimap button")
     print("  /repcalc tsmprice [src]  show/set the TSM price source (needs TSM)")
+    print("  /repcalc inventory [on|off]  subtract items you already own")
     print("  /repcalc calc            print the current cheapest plan")
     print("  /repcalc reps            list registered reputations")
     print("  /repcalc rep <id>        switch active reputation (e.g. aldor, scryers)")
@@ -92,6 +93,21 @@ handlers.minimap = function()
         local hidden = (A.DB.Shared() or {}).minimapHide
         print(PREFIX .. " minimap button " .. (hidden and "hidden." or "shown."))
     end
+end
+
+handlers.inventory = function(args)
+    local db = A.DB.Shared()
+    if not db then return end
+    local a = Trim(args):lower()
+    if a == "on" then
+        db.useInventory = true
+    elseif a == "off" then
+        db.useInventory = false
+    else
+        db.useInventory = not (db.useInventory ~= false)  -- toggle
+    end
+    print(PREFIX .. " subtract owned items: " .. ((db.useInventory ~= false) and "on" or "off"))
+    A.Engine.Refresh("inventory_toggle")
 end
 
 handlers.tsmprice = function(args)

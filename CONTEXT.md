@@ -65,8 +65,18 @@ overwriting items TSM actually has — otherwise the AH-scanned / manual price
 stays. `/repcalc tsmprice [source]` shows/sets the source. So price priority
 is effectively: TSM (if loaded) → passive AH scan → manual.
 
-**Phase 2 essentially complete** (panel + minimap + AH scan + TSM prices).
-Remaining is polish: in-game layout tuning and any extras the user wants.
+`Core/Inventory.lua` (ported from Alfred) returns the owned count for an item
+(TSM bag/bank/mail if loaded, else a native bag scan). When "Subtract items I
+already have" is on (`RepCalcDB.useInventory`, default true; checkbox bottom-
+left, or `/repcalc inventory on|off`), the panel shows "buy K (have M)" per
+turn-in and the totals reflect only what you still need to BUY. The Calculator
+stays pure — the subtraction is applied in the panel's Refresh (running
+remainder so a multi-group item isn't double-counted). Refreshes on
+BAG_UPDATE_DELAYED. Note: this trims the *chosen* item's count; it does not
+re-solve to prefer an owned-but-pricier item.
+
+**Phase 2 essentially complete** (panel + minimap + AH scan + TSM prices +
+inventory). Remaining is polish: in-game layout tuning and extras.
 
 ## File structure
 
@@ -84,6 +94,7 @@ RepCalculator/                   ← addon folder; MUST match the .toc name
 │   ├── Engine.lua                ← events (PLAYER_LOGIN, UPDATE_FACTION, UNIT_AURA) + Refresh listeners
 │   ├── AHPrices.lua              ← passive AH scanner (port of Alfred); writes lowest buyout into per-rep prices
 │   ├── TSMPrices.lua             ← reads prices from TSM_API (port of Alfred); preferred source when TSM is loaded
+│   ├── Inventory.lua             ← owned-count lookup (port of Alfred): TSM bag/bank/mail, else native bag scan
 │   ├── MainPanel.lua             ← two-column UI panel (A.UI.Show/Hide/Toggle), subscribes to OnRefresh
 │   ├── Minimap.lua               ← self-contained minimap button (A.Minimap.*), drag to move
 │   └── Slash.lua                 ← /repcalc, /rc + subcommands (show/hide/toggle/minimap + power-user cmds)
@@ -100,7 +111,7 @@ Load order (in `.toc`):
 ```
 Registry → Timer → Faction → Bonuses
 → AldorData → Aldor → ScryersData → Scryers → CenarionData → Cenarion
-→ DB → Calculator → Engine → AHPrices → TSMPrices → MainPanel → Minimap → Slash
+→ DB → Calculator → Engine → AHPrices → TSMPrices → Inventory → MainPanel → Minimap → Slash
 ```
 
 **Important**: `Registry` must load before any `Reputations/*.lua` (they

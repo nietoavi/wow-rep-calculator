@@ -68,5 +68,7 @@ f:SetScript("OnEvent", function(self, event, arg1)
         A.Engine.Refresh("update_faction")
     elseif event == "UNIT_AURA" and arg1 == "player" then
         A.Engine.Refresh("unit_aura")
+    elseif event == "BAG_UPDATE_DELAYED" then
+        A.Engine.Refresh("bag_update")
     end
 end)
