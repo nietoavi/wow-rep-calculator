@@ -18,6 +18,7 @@ local function Help()
     print("  /repcalc                 toggle the panel")
     print("  /repcalc show|hide       open or close the panel")
     print("  /repcalc minimap         show/hide the minimap button")
+    print("  /repcalc tsmprice [src]  show/set the TSM price source (needs TSM)")
     print("  /repcalc calc            print the current cheapest plan")
     print("  /repcalc reps            list registered reputations")
     print("  /repcalc rep <id>        switch active reputation (e.g. aldor, scryers)")
@@ -91,6 +92,30 @@ handlers.minimap = function()
         local hidden = (A.DB.Shared() or {}).minimapHide
         print(PREFIX .. " minimap button " .. (hidden and "hidden." or "shown."))
     end
+end
+
+handlers.tsmprice = function(args)
+    if not A.TSMPrices then
+        print(PREFIX .. " TSM price module not loaded.")
+        return
+    end
+    local raw = Trim(args)
+    if raw == "" then
+        local avail = A.TSMPrices.Available()
+        print(string.format("%s TSM price source: |cffffd100%s|r  (TSM %s)",
+            PREFIX, A.TSMPrices.GetSource(), avail and "loaded" or "not loaded"))
+        print("  usage: /repcalc tsmprice <source>  (e.g. dbminbuyout, dbmarket); 'reset' for default")
+        return
+    end
+    if raw:lower() == "reset" or raw:lower() == "default" then
+        A.TSMPrices.SetSource(nil)
+        print(PREFIX .. " TSM price source reset to default (dbminbuyout).")
+    else
+        A.TSMPrices.SetSource(raw)   -- keep case for complex price strings
+        print(PREFIX .. " TSM price source: " .. raw)
+    end
+    if A.UI and A.UI.PullTSMPrices then A.UI.PullTSMPrices() end
+    A.Engine.Refresh("tsm_source")
 end
 
 handlers.calc = function()

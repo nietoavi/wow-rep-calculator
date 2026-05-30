@@ -56,8 +56,17 @@ direct for TSM/Auctionator. Panel price rows mirror Alfred's click model:
 focused — chat, or a TSM/Auctionator search box). Each turn-in result row on
 the right shows the **per-unit price** (`@ Xs ea = total`).
 
-**Phase 2 essentially complete** (panel + minimap + AH prices). Remaining is
-polish: in-game layout tuning and any extras the user wants.
+`Core/TSMPrices.lua` (ported from Alfred) reads prices from `TSM_API`
+(`GetCustomPriceValue(source, itemString)`, source configurable via
+`RepCalcDB.tsmPriceSource`, default `dbminbuyout`→`dbmarket` fallback). The
+panel calls `A.UI.PullTSMPrices()` on Show and on faction switch: when TSM is
+present it auto-fills the active reputation's prices (copper→silver), only
+overwriting items TSM actually has — otherwise the AH-scanned / manual price
+stays. `/repcalc tsmprice [source]` shows/sets the source. So price priority
+is effectively: TSM (if loaded) → passive AH scan → manual.
+
+**Phase 2 essentially complete** (panel + minimap + AH scan + TSM prices).
+Remaining is polish: in-game layout tuning and any extras the user wants.
 
 ## File structure
 
@@ -74,6 +83,7 @@ RepCalculator/                   ← addon folder; MUST match the .toc name
 │   ├── Calculator.lua            ← cheapest-path solver, groups by item across bands
 │   ├── Engine.lua                ← events (PLAYER_LOGIN, UPDATE_FACTION, UNIT_AURA) + Refresh listeners
 │   ├── AHPrices.lua              ← passive AH scanner (port of Alfred); writes lowest buyout into per-rep prices
+│   ├── TSMPrices.lua             ← reads prices from TSM_API (port of Alfred); preferred source when TSM is loaded
 │   ├── MainPanel.lua             ← two-column UI panel (A.UI.Show/Hide/Toggle), subscribes to OnRefresh
 │   ├── Minimap.lua               ← self-contained minimap button (A.Minimap.*), drag to move
 │   └── Slash.lua                 ← /repcalc, /rc + subcommands (show/hide/toggle/minimap + power-user cmds)
@@ -90,7 +100,7 @@ Load order (in `.toc`):
 ```
 Registry → Timer → Faction → Bonuses
 → AldorData → Aldor → ScryersData → Scryers → CenarionData → Cenarion
-→ DB → Calculator → Engine → AHPrices → MainPanel → Minimap → Slash
+→ DB → Calculator → Engine → AHPrices → TSMPrices → MainPanel → Minimap → Slash
 ```
 
 **Important**: `Registry` must load before any `Reputations/*.lua` (they

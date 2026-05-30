@@ -193,6 +193,7 @@ local function BuildPanel()
                 if A.DB.SetActiveReputationId(b.value) then
                     UIDropDownMenu_SetSelectedValue(widgets.factionDropdown, b.value)
                     A.UI.RebuildItemRows()
+                    A.UI.PullTSMPrices()
                     A.Engine.Refresh("rep_changed")
                 end
             end
@@ -512,8 +513,27 @@ function A.UI.EnsureBuilt()
     end
 end
 
+-- Auto-fill the active reputation's prices from TSM when its API is available.
+-- Only overwrites when TSM actually returns a value (>0), so items TSM doesn't
+-- know about keep their AH-scanned / manually-entered price. Called on show and
+-- on faction switch — not on every Refresh, so a manual edit sticks mid-session.
+function A.UI.PullTSMPrices()
+    if not A.TSMPrices or not A.TSMPrices.Available() then return end
+    local def = RepCalc.GetActiveReputation()
+    if not def or not def.items then return end
+    for _, it in ipairs(def.items) do
+        if it.itemID then
+            local copper = A.TSMPrices.Get(it.itemID)
+            if copper and copper > 0 then
+                A.DB.SetPrice(it.itemID, math.floor(copper / 100 + 0.5))
+            end
+        end
+    end
+end
+
 function A.UI.Show()
     A.UI.EnsureBuilt()
+    A.UI.PullTSMPrices()
     panel:Show()
     Refresh()
 end
