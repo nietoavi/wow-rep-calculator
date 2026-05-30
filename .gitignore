@@ -2,6 +2,10 @@
 .claude/
 .claude/settings.local.json
 
+# Packaging / build output
+build/
+*.zip
+
 # OS / editor noise
 .DS_Store
 Thumbs.db
